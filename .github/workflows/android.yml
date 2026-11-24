@@ -34,10 +34,32 @@ jobs:
           unzip WAVE-Android-Source.zip -d extracted
           ls -la extracted
 
+      
+      - name: Fix Java and Kotlin targets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("extracted/WAVE-Android/app/build.gradle.kts")
+          s = p.read_text()
+          old = "    buildFeatures { compose = true }"
+          new = """    compileOptions {
+                sourceCompatibility = JavaVersion.VERSION_17
+                targetCompatibility = JavaVersion.VERSION_17
+            }
+            kotlinOptions {
+                jvmTarget = "17"
+            }
+            buildFeatures { compose = true }"""
+          if old not in s:
+              raise SystemExit("Не найден блок buildFeatures")
+          p.write_text(s.replace(old, new))
+          PY
+
       - name: Build APK
         run: |
           cd extracted/WAVE-Android
           gradle assembleDebug
+          
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
